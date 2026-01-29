@@ -1,0 +1,39 @@
+/* Reset default browser margins */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #1a1a1a; 
+    font-family: Arial, sans-serif;
+}
+
+/* Map takes full screen height */
+#map {
+    height: 100vh;
+    width: 100%;
+}
+
+/* Custom Marker Styles */
+.bus-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+    
+    /* Ensure the dot is visible and centered */
+    display: block;
+    position: relative;
+    
+    /* Smooth movement animation */
+    transition: transform 15s linear;
+}
+
+/* Ensure the Leaflet container for the icon doesn't hide the dot */
+.custom-icon {
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
