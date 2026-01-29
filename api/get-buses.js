@@ -1,15 +1,23 @@
 export default async function handler(req, res) {
-  try {
-    const response = await fetch('https://v0.ovapi.nl/vehicle/');
-    const data = await response.json();
-
-    // Vertel de browser dat alles oké is
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Content-Type', 'application/json');
+    // We gebruiken nu de Data.ndovloket.nl bron, deze is vaak stabieler
+    const url = 'https://data.ndovloket.nl/all/bussen.json'; 
     
-    // Stuur de data direct terug naar je telefoon
-    res.status(200).send(JSON.stringify(data));
-  } catch (error) {
-    res.status(500).json({ error: "Server error", details: error.message });
-  }
+    try {
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            // Als deze ook plat ligt, proberen we een backup URL
+            const backupRes = await fetch('https://v0.ovapi.nl/vehicle/');
+            const backupData = await backupRes.json();
+            return res.status(200).json(backupData);
+        }
+
+        const data = await response.json();
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).json(data);
+    } catch (error) {
+        // Als alles faalt, sturen we een lege lijst zodat je kaart niet crasht
+        return res.status(200).json({});
+    }
 }
