@@ -1,13 +1,19 @@
 export default async function handler(req, res) {
     try {
         const response = await fetch('https://v0.ovapi.nl/vehicle/');
-        if (!response.ok) throw new Error('OVapi onbereikbaar');
+        
+        if (!response.ok) {
+            return res.status(response.status).json({ error: "OVapi fout" });
+        }
+
         const data = await response.json();
 
-        // Dit vertelt de browser: "Dit is veilig, je mag het laden"
+        // Belangrijk: Vercel heeft soms moeite met reusachtige JSON. 
+        // We sturen de data direct door.
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.status(200).json(data);
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
     }
 }
