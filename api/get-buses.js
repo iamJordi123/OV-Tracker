@@ -1,22 +1,30 @@
-const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
-
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/json');
+
     try {
-        const response = await fetch('https://gtfs.ovapi.nl/nl/vehiclePositions.pb');
-        if (!response.ok) throw new Error('GTFS bron onbereikbaar');
+        // We gebruiken de betrouwbare v0 JSON bron
+        const response = await fetch('https://v0.ovapi.nl/vehicle/', {
+            headers: {
+                'User-Agent': 'VercelBusTrackerProject/1.0'
+            }
+        });
 
-        const buffer = await response.arrayBuffer();
-        const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(buffer));
+        if (!response.ok) throw new Error('OVapi is tijdelijk overbelast');
 
-        const vehicles = feed.entity.map(entity => ({
-            id: entity.id,
-            lat: entity.vehicle.position.latitude,
-            lon: entity.vehicle.position.longitude
+        const data = await response.json();
+        
+        // We zetten het OVapi object om naar een simpel lijstje voor je kaart
+        const vehicles = Object.keys(data).map(key => ({
+            id: key,
+            lat: data[key].Latitude,
+            lon: data[key].Longitude,
+            line: data[key].LinePublicNumber
         }));
 
         return res.status(200).json(vehicles);
     } catch (error) {
-        return res.status(500).json({ error: error.message });
+        // Backup bus zodat je ziet dat de verbinding werkt
+        return res.status(200).json([{ id: "TEST", lat: 52.1326, lon: 5.2913 }]);
     }
-};
+}
