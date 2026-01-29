@@ -1,34 +1,24 @@
-// ... (bovenkant van je script met de map)
+const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 
-async function updateBuses() {
+module.exports = async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     try {
-        const response = await fetch('/api/get-buses');
-        const data = await response.json();
-        
-        // OVapi specifieke manier om door data te lussen
-        const vehicleKeys = Object.keys(data);
-        console.log("OVapi data binnen! Aantal bussen:", vehicleKeys.length);
+        const response = await fetch('https://gtfs.ovapi.nl/nl/vehiclePositions.pb');
+        if (!response.ok) throw new Error('GTFS bron onbereikbaar');
 
-        vehicleKeys.forEach((key) => {
-            const v = data[key];
-            const lat = v.Latitude;
-            const lon = v.Longitude;
+        const buffer = await response.arrayBuffer();
+        const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(buffer));
 
-            if (lat && lon) {
-                if (busMarkers[key]) {
-                    busMarkers[key].setLatLng([lat, lon]);
-                } else {
-                    busMarkers[key] = L.circleMarker([lat, lon], {
-                        radius: 4,
-                        fillColor: "#ffc917",
-                        color: "#000",
-                        weight: 1,
-                        fillOpacity: 0.9
-                    }).addTo(map);
-                }
-            }
-        });
-    } catch (e) { 
-        console.log("Script fout:", e); 
+        const vehicles = feed.entity.map(entity => ({
+            id: entity.id,
+            lat: entity.vehicle.position.latitude,
+            lon: entity.vehicle.position.longitude,
+            label: entity.vehicle.vehicle.label
+        }));
+
+        return res.status(200).json(vehicles);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: error.message });
     }
-}
+};
