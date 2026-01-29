@@ -1,5 +1,8 @@
 const map = L.map('map').setView([52.1326, 5.2913], 8);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OSM & CARTO'
+}).addTo(map);
 
 let busMarkers = {};
 
@@ -8,19 +11,21 @@ async function updateBuses() {
         const response = await fetch('/api/get-buses');
         const data = await response.json();
         
-        // Zorg dat we altijd een lijst hebben om doorheen te lopen
+        // We maken er altijd een lijst van, of het nu een object of array is
         const vehicles = Array.isArray(data) ? data : Object.values(data);
         console.log("Data binnen! Aantal stipjes:", vehicles.length);
 
         vehicles.forEach((v, i) => {
-            const lat = v.Latitude || v.lat;
-            const lon = v.Longitude || v.lon;
-            const id = v.VehicleNumber || i;
+            // De '||' betekent: gebruik de eerste die niet leeg is
+            const lat = v.lat || v.Latitude || v.latitude;
+            const lon = v.lon || v.Longitude || v.longitude;
+            const id = v.VehicleNumber || v.RegistrationNumber || i;
 
             if (lat && lon) {
                 if (busMarkers[id]) {
                     busMarkers[id].setLatLng([lat, lon]);
                 } else {
+                    // We tekenen een mooi cirkeltje voor elke bus
                     busMarkers[id] = L.circleMarker([lat, lon], {
                         radius: 5,
                         fillColor: "#ffc917",
@@ -32,8 +37,11 @@ async function updateBuses() {
                 }
             }
         });
-    } catch (e) { console.log("Foutje:", e); }
+    } catch (e) { 
+        console.log("Foutje in script.js:", e); 
+    }
 }
 
+// Elke 10 seconden verversen
 setInterval(updateBuses, 10000);
 updateBuses();

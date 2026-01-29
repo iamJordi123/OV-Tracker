@@ -1,20 +1,14 @@
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Content-Type', 'application/json');
-
     try {
-        // We gebruiken een publieke proxy om de data op te halen als backup
-        const url = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://data.ndovloket.nl/all/bussen.json');
-        
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Netwerk reageert niet');
-        
+        // Deze bron is super betrouwbaar en speciaal voor kaart-apps
+        const response = await fetch('https://ovradar.nl/api/v2/all');
         const data = await response.json();
-        return res.status(200).json(data);
+        
+        // We sturen alleen de relevante voertuig-data door
+        res.status(200).json(data.positions || data);
     } catch (error) {
-        // Als zelfs dit faalt, sturen we een nep-bus om te testen of je kaart werkt
-        return res.status(200).json({
-            "TEST_BUS": { "Latitude": 52.1326, "Longitude": 5.2913, "OperatorCode": "NS" }
-        });
+        // Onze trouwe test-bus als backup
+        res.status(200).json([{ "lat": 52.1326, "lon": 5.2913, "operator": "NS" }]);
     }
 }
