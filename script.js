@@ -1,24 +1,37 @@
-const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
+const map = L.map('map').setView([52.1326, 5.2913], 8);
 
-module.exports = async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+
+let busMarkers = {};
+
+async function updateBuses() {
     try {
-        const response = await fetch('https://gtfs.ovapi.nl/nl/vehiclePositions.pb');
-        if (!response.ok) throw new Error('GTFS bron onbereikbaar');
+        const response = await fetch('/api/get-buses');
+        const vehicles = await response.json();
+        
+        console.log("Data binnen! Aantal stipjes:", vehicles.length);
 
-        const buffer = await response.arrayBuffer();
-        const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(buffer));
-
-        const vehicles = feed.entity.map(entity => ({
-            id: entity.id,
-            lat: entity.vehicle.position.latitude,
-            lon: entity.vehicle.position.longitude,
-            label: entity.vehicle.vehicle.label
-        }));
-
-        return res.status(200).json(vehicles);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: error.message });
+        vehicles.forEach((v) => {
+            if (v.lat && v.lon) {
+                if (busMarkers[v.id]) {
+                    busMarkers[v.id].setLatLng([v.lat, v.lon]);
+                } else {
+                    busMarkers[v.id] = L.circleMarker([v.lat, v.lon], {
+                        radius: 5,
+                        fillColor: "#ffc917",
+                        color: "#fff",
+                        weight: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Fout in script.js:", e);
     }
-};
+}
+
+setInterval(updateBuses, 5000);
+updateBuses();
