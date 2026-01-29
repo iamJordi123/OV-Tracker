@@ -10,7 +10,7 @@ async function updateBuses() {
         const data = await response.json();
         
         // NDOV data zit vaak direct in de lijst, OVapi in een object. We checken beide:
-        onst vehicles = data.isRegistered ? Object.values(data) : (Array.isArray(data) ? data : Object.values(data));
+        const vehicles = data.isRegistered ? Object.values(data) : (Array.isArray(data) ? data : Object.values(data));
         console.log("Succes! Aantal voertuigen gevonden:", vehicles.length);
 
         vehicles.forEach((v, index) => {
